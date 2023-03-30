@@ -1,185 +1,112 @@
-# import libraries
+# Import Libraries
+# Import Libraries
+import streamlit as st # UI framework
+
 import pandas as pd
 import numpy as np
-import streamlit as st # deployment
+from sklearn.datasets import fetch_california_housing
+# download the California Housing dataset
+california_housing = fetch_california_housing(as_frame=True)
+
+import matplotlib.pyplot as plt # Bar chart
+import seaborn as sns # Scatter plot
+
+
+
+# import lazypredict - 
+# Lazy Predict helps build a lot of basic models without much code and helps understand which models works better without any parameter tuning
+import lazypredict
+
+# Import watermark + filterwarnings
+from watermark import watermark
+from warnings import filterwarnings
+filterwarnings("ignore")
+print(watermark())
+print(watermark(iversions=True, globals_=globals()))
+
+#------------------------------------------------------------------#
+
+# Set page configurations - always at the top
+st.set_page_config(page_title="Proptech", page_icon="🏡", layout="centered")
+
+#------------------------------------------------------------------#
+
+
+# Add cache decorator to store ticker values after first time download in browser
+@st.cache_data
+
+
+# Use local style.css file
+def local_css(file_name):
+    """
+    Use a local style.css file.
+    """
+    with open(file_name) as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+# load css file
+local_css("./style/style.css")
 
 
 
 #------------------------------------------------------------------#
 
-# Read ticker symbols from a CSV file
-try:
-    tickers = pd.read_csv("./Resources/tickers.csv")
-except:
-    logging.error('Cannot find the CSV file')
 
-# Title/ header
-st.header("Crypto coin next day price predictor")
-st.write("Select from the Top 10 crypto coins based on market cap to view forecast for tomorrow's potential closing price and compare against different Machine Learning models")
-st.write("---")
+# Create 2 columns section in the UI
+col1, col2 = st.columns([8, 1])
+
+# Use the first column to display information about the real estate data
+with col1:
+    st.header("California housing analysis")
+    st.write("---")
     
-# Show tickers list
-st.write(f"<b>Below is the list of the coins available for analysis</b>",unsafe_allow_html=True)
-st.write(tickers)
-st.write("---")
-
-#------------------------------------------------------------------#
-
-# declare variable for current date/ end date
-today = date.today()
-end_date = today.strftime("%Y-%m-%d")
-
-# declare variable for start date - past 3 years
-d2 = date.today() - timedelta(days=1095)
-start_date = d2.strftime("%Y-%m-%d")
-
-
-# Display a selectbox for the user to choose a ticker
-ticker = st.selectbox("Select a ticker from the dropdown menu",tickers)
-
-
-# download yfinance data
-data = yf.download(ticker, 
-                      start=start_date, 
-                      end=end_date, 
-                      progress=False)
-data["Date"] = data.index
-data = data[["Date", "Open", "High", "Low", "Close", "Adj Close", "Volume"]]
-data.reset_index(drop=True, inplace=True)
-
-
-# Display Candlestick chart
-data_check_box=st.checkbox(label=f"Display {ticker} raw dataset for the past 3 years")
-if data_check_box:
-
-    # Display full dataset
-    st.write(data)
-
-    # shape of the data
-    # st.write(f"Data shape (rows, columns) - ",data.shape)
-
-
-
-# Create Candlestick attribute
-figure = go.Figure(data=[go.Candlestick(x=data["Date"],
-                                        open=data["Open"], 
-                                        high=data["High"],
-                                        low=data["Low"], 
-                                        close=data["Close"])])
-figure.update_layout(title = f"Candlestick Analysis for {ticker} price",
-                     xaxis_rangeslider_visible=False)
-
-
-# Display Candlestick chart
-candlestick_check_box=st.checkbox(label=f"Display {ticker} interactive Candlestick chart")
-if candlestick_check_box:
-    st.info(f"Candlestick chart shows {ticker} crypto coin's Open, High, Low, and Close price for the day")
-    st.plotly_chart(figure)
-
-
-st.write("---")
-
+    # look at the available description
+    st.write(california_housing.DESCR)
     
-# Display data for prediction "Close"
-prediction_check_box=st.checkbox(label=f"Display ML data for {ticker} next-day 'Close' price prediction")
-if prediction_check_box:
+    # return it as a Pandas dataframe
+    # Print the dataframe's shape
+    st.write("Shape of the dataframe: ", california_housing.frame.shape)
     
-    correlation=data.corr()
-    # st.write(correlation["Close"].sort_values(ascending=False))
-    
-    # Create new feature - percent change
-    data['Pct_Change'] = data['Close'].pct_change()
-    data = data.dropna()
-
-    # Linear Regression
-    x = data[['Open', 'High', 'Low', 'Adj Close', 'Volume', 'Pct_Change']]
-    y = data[['Close']]
-
-    lm = LinearRegression()
-    lm.fit(x, y)
-
-    # Predict tomorrow close price
-    last_row = data.tail(1)
-    next_day_data = pd.DataFrame({'Open': last_row['Open'],
-                                  'High': last_row['High'],
-                                  'Low': last_row['Low'],
-                                  'Adj Close': last_row['Adj Close'],
-                                  'Volume': last_row['Volume'],
-                                  'Pct_Change': last_row['Pct_Change']})
-
-    predicted_close_price = lm.predict(next_day_data)[0][0] 
-
+    # Check columns
+    st.write(california_housing.keys())
     
     
-    # Display the predicted close price - Linear Regression
-    if st.button("Linear Regression ML prediction"):
-        st.write(f"Predicted {ticker} close price for tomorrow is: <b>{predicted_close_price:.2f} USD</b>",unsafe_allow_html=True)
-        
-        
-        
-        
+    # overview of the entire dataset
+    st.write(california_housing.frame.head())
     
-    # Display the predicted close price - Polynomial Regression
+    # look at the features that can be used by a predictive model
+    st.write(california_housing.data.head())
     
-    # Select the 'Close' column as the target variable
-    y = data['Close']
-
-    # Select the remaining columns as the features
-    X = data.drop(['Close', 'Date'], axis=1)
-
-    # Create polynomial features with degree 2
-    poly = PolynomialFeatures(degree=2)
-    X_poly = poly.fit_transform(X)
-
-    # Split data into training and testing sets
-    split = int(0.8*len(data))
-    X_train = X_poly[:split]
-    y_train = y[:split]
-    X_test = X_poly[split:]
-    y_test = y[split:]
-
-    # Train a polynomial regression model
-    lm_poly = LinearRegression()
-    lm_poly.fit(X_train, y_train)
-
-    # Predict tomorrow close price
-    last_row = data.tail(1)
-    next_day_data = pd.DataFrame({'Open': last_row['Open'],
-                                  'High': last_row['High'],
-                                  'Low': last_row['Low'],
-                                  'Adj Close': last_row['Adj Close'],
-                                  'Volume': last_row['Volume'],
-                                  'Pct_Change': last_row['Pct_Change']})
-    next_day_data_poly = poly.transform(next_day_data)
-
-    predicted_close_price = lm_poly.predict(next_day_data_poly)[0]
-
-    # Define a button to display the predicted price
-    if st.button("Polynomial Regression ML prediction"):
-        st.write(f"Predicted {ticker} close price for tomorrow is: <b>{predicted_close_price:.2f} USD</b>",unsafe_allow_html=True)
-        
     
-    # Define the features and target
-    features = ['Open', 'High', 'Low', 'Adj Close', 'Volume', 'Pct_Change']
-    target = ['Close']
+    # In this dataset, we have information regarding the demography (income, population, house occupancy) in the districts, the location of the districts (latitude, longitude), and general information regarding the house in the districts (number of rooms, number of bedrooms, age of the house). 
+    # Since these statistics are at the granularity of the district, they corresponds to averages or medians.
+    
+    # look to the target to be predicted
+    st.write(california_housing.target.head())
+    
+    # check more into details the data types and if the dataset contains any missing value
+    st.write(california_housing.frame.info())
+    
+    
+    
+    # Visualization of distribution of features by plotting respective histograms
+    fig=california_housing.frame.hist(figsize=(12, 10), bins=30, edgecolor="black")
+    st.pyplot(plt.subplots_adjust(hspace=0.7, wspace=0.4))
+    
+    
+    
+    #  look at the statistics for specific features
+    features_of_interest = ["AveRooms", "AveBedrms", "AveOccup", "Population"]
+    st.write(california_housing.frame[features_of_interest].describe())
+    
+    
+    sns.scatterplot(data=california_housing.frame, x="Longitude", y="Latitude",
+                size="MedHouseVal", hue="MedHouseVal",
+                palette="rainbow", alpha=0.5)
+    plt.legend(title="MedHouseVal", bbox_to_anchor=(1.05, 0.95),
+               loc="upper left")
+    _ = plt.title("Median house value depending of\n their spatial location")
+    
 
-    # Split the data into training and testing sets
-    X_train, X_test, y_train, y_test = train_test_split(data[features], data[target], test_size=0.3, random_state=42)
-
-    # Train a random forest regression model
-    rf = RandomForestRegressor(n_estimators=200, random_state=1)
-    rf.fit(X_train, y_train.values.ravel())
-
-    # Define a function to predict tomorrow's close price
-    def predict_next_close_price():
-        # Get the last row of data
-        last_row = data.tail(1)[features]
-
-        # Predict tomorrow's close price
-        predicted_close_price = rf.predict(last_row)[0]
-
-
-    # Create a button to trigger the prediction
-    if st.button("Random Forest ML prediction"):
-        # Display the predicted close price
-        st.write(f"Predicted {ticker} close price for tomorrow is: <b>{predicted_close_price:.2f} USD</b>",unsafe_allow_html=True)
+# Use the second column to display empty information
+with col2:
+    st.empty()
