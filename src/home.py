@@ -3,7 +3,6 @@ import pandas as pd
 import datetime
 from datetime import date, timedelta
 import streamlit as st # deployment
-import plotly.graph_objects as go # Candlestick chart
 from sklearn.linear_model import LinearRegression # Time series analysis
 from sklearn.preprocessing import PolynomialFeatures # Polynomial Regression
 
