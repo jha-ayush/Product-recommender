@@ -1,19 +1,8 @@
 # import libraries
 import pandas as pd
-import datetime
-from datetime import date, timedelta
+import numpy as np
 import streamlit as st # deployment
 
-
-# Import warnings + watermark
-from watermark import watermark
-from warnings import filterwarnings
-filterwarnings("ignore")
-print(watermark())
-print(watermark(iversions=True, globals_=globals()))
-
-
- 
 
 
 #------------------------------------------------------------------#
