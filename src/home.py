@@ -1,6 +1,5 @@
 # import libraries
 import pandas as pd
-import yfinance as yf
 import datetime
 from datetime import date, timedelta
 import streamlit as st # deployment
@@ -20,7 +19,7 @@ print(watermark())
 print(watermark(iversions=True, globals_=globals()))
 
 
-
+ 
 
 
 #------------------------------------------------------------------#
