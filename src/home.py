@@ -3,12 +3,7 @@ import pandas as pd
 import datetime
 from datetime import date, timedelta
 import streamlit as st # deployment
-from sklearn.linear_model import LinearRegression # Time series analysis
-from sklearn.preprocessing import PolynomialFeatures # Polynomial Regression
 
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.model_selection import train_test_split
 
 # Import warnings + watermark
 from watermark import watermark
